@@ -41,7 +41,7 @@ jobs:
       - name: Compile RPM packages
         working-directory: kernel
         run: |
-          make -j2 rpm-pkg
+          make -j$(nproc) rpm-pkg
 
       - name: Collect RPM packages
         run: |
