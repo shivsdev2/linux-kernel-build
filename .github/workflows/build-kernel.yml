@@ -46,7 +46,7 @@ jobs:
       - name: Collect RPM packages
         run: |
           mkdir -p packages
-          find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} packages/ \;
+          find "$GITHUB_WORKSPACE/kernel/rpmbuild/RPMS" -name '*.rpm' -exec cp {} packages/ \;
           test -n "$(ls packages/*.rpm 2>/dev/null)"
 
       - name: Upload RPM packages
