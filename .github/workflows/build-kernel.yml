@@ -1,0 +1,57 @@
+name: Build Lenovo Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout configuration
+        uses: actions/checkout@v4
+        with:
+          path: config
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential bc bison flex \
+            libssl-dev libelf-dev libncurses-dev \
+            dwarves rsync cpio kmod rpm \
+            python3 perl
+
+      - name: Download exact kernel source
+        run: |
+          git init kernel
+          git -C kernel remote add origin \
+            https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+          git -C kernel fetch --depth=1 origin \
+            067c5c24cef23d913b67eaaf71ae67e7169a6620
+          git -C kernel checkout --detach FETCH_HEAD
+
+      - name: Configure kernel
+        working-directory: kernel
+        run: |
+          cp ../config/.config .config
+          make olddefconfig
+
+      - name: Compile RPM packages
+        working-directory: kernel
+        run: |
+          make -j2 rpm-pkg
+
+      - name: Collect RPM packages
+        run: |
+          mkdir -p packages
+          find ~/rpmbuild/RPMS -name '*.rpm' -exec cp {} packages/ \;
+          test -n "$(ls packages/*.rpm 2>/dev/null)"
+
+      - name: Upload RPM packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: lenovo-custom-kernel
+          path: packages/*.rpm
+          retention-days: 3
